@@ -97,7 +97,9 @@ end
 -- Whether the action in a slot is an attack that has to be made from
 -- melee reach.
 local function IsMelee(slot)
-    local harmful = actionBar.IsHarmfulAction and actionBar.IsHarmfulAction(slot)
+    -- The second argument is required by the game: whether actions usable
+    -- on neutral targets count as harmful too.
+    local harmful = actionBar.IsHarmfulAction and actionBar.IsHarmfulAction(slot, true)
     if not Usable(harmful) or not harmful then return false end
     local actionType, id = GetActionInfo(slot)
     if not Usable(actionType) or actionType ~= "spell" or not Usable(id) then return false end
@@ -127,7 +129,18 @@ local function OutOfRange(slot)
             return true
         end
     end
-    return ns.db.melee and IsMelee(slot) and TargetBeyondMelee()
+    if not ns.db.melee or meleeRefused then return false end
+    -- The melee check leans on parts of the game's API that could not be
+    -- tried before release. If one of them objects, melee shading switches
+    -- itself off with a single message; ordinary range shading, above,
+    -- never depends on it.
+    local ok, result = pcall(function() return IsMelee(slot) and TargetBeyondMelee() end)
+    if not ok then
+        meleeRefused = true
+        ns.Print("Melee shading ran into a problem and has switched itself off: " .. tostring(result))
+        return false
+    end
+    return result
 end
 
 -- "/rangeshade debug": what the game says about each button's action, to
@@ -137,6 +150,13 @@ local function PrintDebug(buttons)
         if value == nil then return "nil" end
         if not Usable(value) then return "(withheld)" end
         return tostring(value)
+    end
+    -- Calls something that might object, and reports the objection as text.
+    local function Try(fn, ...)
+        if not fn then return nil end
+        local ok, result = pcall(fn, ...)
+        if ok then return result end
+        return "error: " .. tostring(result)
     end
     ns.Print(("Target beyond melee: %s. Melee check refused by the game: %s."):format(
         tostring(TargetBeyondMelee()), tostring(meleeRefused)))
@@ -157,8 +177,8 @@ local function PrintDebug(buttons)
                 ns.Print(("%s: %s %s \"%s\" reach=%s hasRange=%s inRange=%s harmful=%s melee=%s shaded=%s"):format(
                     button:GetName() or "?", actionType, Show(id), name, Show(reach),
                     Show(HasRange(slot)), Show(InRange(slot)),
-                    Show(actionBar.IsHarmfulAction and actionBar.IsHarmfulAction(slot)),
-                    tostring(IsMelee(slot)), tostring(OutOfRange(slot))))
+                    Show(Try(actionBar.IsHarmfulAction, slot, true)),
+                    Show(Try(IsMelee, slot)), tostring(OutOfRange(slot))))
             end
         end
     end

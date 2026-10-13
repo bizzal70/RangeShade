@@ -17,6 +17,7 @@ Shades action bar buttons red when your target is out of range. One addon, one r
 - Hooks each button's `UpdateUsable` to re-tint at once, and restores the game's own colours (white, out-of-mana blue, unusable grey) itself rather than calling Blizzard's update.
 - Melee: the game reports melee abilities as in range at any distance on this client (seen in game 2026-10-13: ranged shots shaded, Raptor Strike did not). An action counts as melee if `C_ActionBar.IsHarmfulAction` is true and its spell's `maxRange` is 5 or less; it is shaded when `CheckInteractDistance("target", 3)` (duelling distance, about 10 yards) says a hostile target is not near. Whether that rule matches what the game reports for real melee abilities is unverified; `/rangeshade debug` prints the facts per button. If the client blocks `CheckInteractDistance`, the addon hears `ADDON_ACTION_FORBIDDEN` / `_BLOCKED` and stops asking.
 - Ordinary range shading was confirmed working in game on 2026-10-13.
+- 0.2.0 broke in game: `C_ActionBar.IsHarmfulAction(actionID, useNeutral)` requires its second argument, and the error on every tick stopped all shading (the fake game had accepted one argument). Fixed in 0.2.1, and the melee path now runs under `pcall` so an unexpected API difference turns melee shading off with one message instead of breaking the loop. The fake `IsHarmfulAction` now refuses a missing argument.
 
 ## Client facts
 

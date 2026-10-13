@@ -2,7 +2,7 @@
 ## Title: RangeShade
 ## Notes: Shades action bar buttons red when your target is out of range. Type /rangeshade.
 ## Author: bizzal70
-## Version: 0.2.0
+## Version: 0.2.1
 ## SavedVariables: RangeShadeDB
 ## IconTexture: Interface\Icons\Ability_Hunter_SniperShot
 ## AddonCompartmentFunc: RangeShade_OnAddonCompartmentClick

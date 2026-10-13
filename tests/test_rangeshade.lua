@@ -17,7 +17,14 @@ C_Spell = { GetSpellInfo = function(id)
     for _, s in pairs(SPELLS) do if s[1] == id then return { name = "Spell " .. id, maxRange = s[2] } end end
 end }
 C_ActionBar = {
-    IsHarmfulAction = function(slot) return SPELLS[slot] and SPELLS[slot][3] or false end,
+    -- Like the real client, it refuses to answer without its second argument.
+    IsHarmfulAction = function(slot, useNeutral)
+        if useNeutral == nil then
+            error("bad argument #2 to '?' (Usage: local isHarmful = C_ActionBar.IsHarmfulAction(actionID, useNeutral))")
+        end
+        if BREAK_MELEE then error("something this client does differently") end
+        return SPELLS[slot] and SPELLS[slot][3] or false
+    end,
     HasRangeRequirements = function(slot) return HAS_RANGE[slot] or false end,
     IsActionInRange = function(slot) return IN_RANGE[slot] end,
     IsUsableAction = function(slot)
@@ -155,3 +162,21 @@ check(ns.db.strength == "strong", "and comes back round")
 RangeShade_OnAddonCompartmentClick()
 check(not RangeShadeOptions:IsShown(), "the minimap addon list entry toggles the options")
 SlashCmdList.RANGESHADE("help")
+
+-- a part of the game's API behaving unexpectedly must not stop everything
+-- (a second copy of the addon, loaded last so it does not disturb the tests above)
+SlashCmdList.RANGESHADE("off")
+RangeShadeDB = nil
+local ns3 = LoadAddon(ADDON_DIR, "RangeShade")
+TARGET = { hostile = true, near = false }
+Fire("ADDON_LOADED", "RangeShade"); Fire("PLAYER_LOGIN")
+local tick3 = TICKERS[#TICKERS]
+BREAK_MELEE = true
+local printedBefore = #PRINTED
+tick3(); tick3()
+check(colour(ActionButton1) == RED and colour(MultiBar5Button3) == RED, "if the melee check hits a problem, ordinary range shading still works")
+local complaints = 0
+for i = printedBefore + 1, #PRINTED do if PRINTED[i]:find("switched itself off", 1, true) then complaints = complaints + 1 end end
+check(complaints == 1, "and the problem is reported once, not on every check")
+BREAK_MELEE = false
+TARGET = nil
