@@ -1,5 +1,9 @@
 # RangeShade
 
+## 0.2.2
+
+- First release on CurseForge. No changes to how the addon works.
+
 ## 0.2.1
 
 - Fixed an error on every check ("bad argument #2 to IsHarmfulAction") that 0.2.0 raised in game and that stopped all shading.
