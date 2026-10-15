@@ -28,6 +28,15 @@ On the Forever client the game reports melee abilities as "in range" however far
 - During combat the game restricts what addons may read. Where it will not report range, a button is left unshaded.
 - `/rangeshade debug` lists what the game reports for each button, which helps explain why one is or is not shaded.
 
+## More from this author
+
+Other small addons for World of Warcraft: Forever, all free:
+
+- **[GatherTrail](https://github.com/bizzal70/GatherTrail)** remembers ore, herbs, fishing pools, skinning spots, chests and rares across all your characters, and guides you back to the best spots.
+- **[MouseTip](https://www.curseforge.com/wow/addons/mousetip)** shows tooltips at your mouse cursor.
+- **[VendorMate](https://github.com/bizzal70/VendorMate)** sells junk and repairs at vendors, and warns when your gear is wearing out.
+- **[AltBoard](https://github.com/bizzal70/AltBoard)** shows all your characters at a glance: level, gold, rested and where you left them.
+
 ## Installing
 
 Copy this folder into `World of Warcraft\_classic_beta_\Interface\AddOns\` as `RangeShade`, restart the game, and enable RangeShade on the character select screen.
