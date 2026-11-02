@@ -7,7 +7,7 @@ Shades action bar buttons red when your target is out of range. One addon, one r
 - **No local `.git`.** GitHub holds all history. Publish with `tools\Publish.ps1 -Message "..."`, which uses a throwaway temp clone and runs the tests first.
 - **Layout:** the addon's own files (`RangeShade.toc`, `Core.lua`, `Options.lua`) sit at the top of the project, because that is what the release packager expects. `tests/`, `tools/` and `.github/` are development-only and are left out of the released zip by `.pkgmeta`.
 - **Testing in game:** `tools\Link-Addon.ps1` junctions this folder into the client's `Interface\AddOns` as `RangeShade`. Edits are live after `/reload`; a new file or a TOC change needs a full client restart.
-- **Client install:** `C:\Program Files (x86)\World of Warcraft\_classic_beta_\` (`WowB.exe`). Expect a different flavor folder after launch (reported for 2026-11-04); pass `-Flavor` to the link script then.
+- **Client install:** `C:\Program Files (x86)\World of Warcraft\_forever_\` (`Wow.exe`, product `wowf`), the live client since launch (4 November 2026). The beta folder `_classic_beta_` was removed on 2026-11-02, and its saved data went with it.
 - **Tests:** `python tests/run.py` runs the addon in real Lua 5.1 (the `lupa` pip package) against a fake WoW API in `tests/wow_stub.lua`, loading the files the TOC lists. The tests run before every publish and again on GitHub. They prove the addon's own logic only; whether the real client behaves like the stub can only be checked in game. `tests/wow_stub.lua` is a copy of the one in the GatherTrail project and is free to drift.
 - **Releases:** a tag starting with `v` runs `.github/workflows/release.yml`, which uses the BigWigs packager. CurseForge and Wago uploads are skipped until their project IDs are in the TOC and their tokens are in the repository secrets. The packager recognises this client: a trial release on 2026-10-13 built `RangeShade-vX.Y.Z-forever.zip` as game version 1.60.1, containing only the addon's files. The uploads to CurseForge and Wago themselves have not been tried.
 
@@ -23,7 +23,7 @@ Shades action bar buttons red when your target is out of range. One addon, one r
 
 Everything below, unless marked verified, comes from community sources during the beta (Warcraft Wiki, GitHub ports, fan guides), not from Blizzard docs. Builds change. Verify in game before relying on any of it.
 
-- Local client was 1.60.1.70338 on 2026-10-11 (read from `WowB.exe`).
+- Local client was 1.60.1.70338 on 2026-10-11 (beta, `WowB.exe`); the live client is 1.60.1.70707 (2026-10-30, `_forever_\Wow.exe`). The TOC interface number for live is not yet confirmed; check `select(4, GetBuildInfo())` in game.
 - TOC: `## Interface: 16001` (verified in game on build 70338).
 - TOC flavor suffix is `_Forever.toc` or `_Camelot.toc`. The TOC `[Game]` variable expands to `Camelot`. Game type for `AllowLoadGameType` is `forever` / `camelot`.
 - The client is Retail-based: Midnight 12.x API and UI architecture, not the Classic API. Port from Retail code.
