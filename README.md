@@ -35,7 +35,7 @@ Other small addons for World of Warcraft: Forever, all free:
 - **[GatherLog](https://github.com/bizzal70/GatherLog)** remembers ore, herbs, fishing pools, skinning spots, chests and rares across all your characters, and guides you back to the best spots.
 - **[MouseTip](https://www.curseforge.com/wow/addons/mousetip)** shows tooltips at your mouse cursor.
 - **[JunkMate](https://github.com/bizzal70/JunkMate)** sells junk and repairs at vendors, and warns when your gear is wearing out.
-- **[AltBoard](https://github.com/bizzal70/AltBoard)** shows all your characters at a glance: level, gold, rested and where you left them.
+- **[AltGlance](https://github.com/bizzal70/AltGlance)** shows all your characters at a glance: level, gold, rested and where you left them.
 - **[SwiftQuest](https://github.com/bizzal70/SwiftQuest)** accepts quests and hands them in as soon as you talk to the quest giver, without ever choosing a reward for you.
 - **[SessionRecap](https://github.com/bizzal70/SessionRecap)** keeps a running tally of your play session: gold, experience per hour, quests, gathering and loot.
 - **[MacroKit](https://github.com/bizzal70/MacroKit)** adds ready-made macros for your class and spec, for all nine classes, and never overwrites your own.
