@@ -10,7 +10,7 @@ It covers the eight standard action bars. When a button is back in range it gets
 
 ## Options
 
-Type `/rangeshade` to open the options, or use the addon's entry in the minimap's addon list.
+Type `/rangeshade` (or `/rshade`) to open the options, or use the addon's entry in the minimap's addon list.
 
 | Setting | What it does | Command |
 |---|---|---|
