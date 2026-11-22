@@ -28,6 +28,10 @@ On the Forever client the game reports melee abilities as "in range" however far
 - During combat the game restricts what addons may read. Where it will not report range, a button is left unshaded.
 - `/rangeshade debug` lists what the game reports for each button, which helps explain why one is or is not shaded.
 
+## Controller
+
+With a game controller, the **B** button closes the RangeShade options, like the X and Escape do. While a window is open, B closes it; once it is closed, B goes back to whatever you have it set to. (In combat the game does not let addons change a button, so B goes back to normal when the fight ends.)
+
 ## More from this author
 
 Other small addons for World of Warcraft: Forever, all free:
