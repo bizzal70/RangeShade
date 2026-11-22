@@ -180,3 +180,24 @@ for i = printedBefore + 1, #PRINTED do if PRINTED[i]:find("switched itself off",
 check(complaints == 1, "and the problem is reported once, not on every check")
 BREAK_MELEE = false
 TARGET = nil
+
+-- The controller's B button closes the addon's windows while they are shown.
+do
+    local bound = {}
+    SetOverrideBinding = function(owner, _, key, command) bound[owner] = { key = key, command = command } end
+    ClearOverrideBindings = function(owner) bound[owner] = nil end
+    local w = CreateFrame("Frame", "PadCloseTestWindow", UIParent)
+    w.HookScript = function(self, event, fn)
+        local previous = self.__scripts[event]
+        self.__scripts[event] = previous and function(...) previous(...); fn(...) end or fn
+    end
+    w:Hide()
+    ns.CloseWithPadB(w, "PadCloseTestWindow")
+    w:Show(); w.__scripts.OnShow(w)
+    check(bound[w] and bound[w].key == "PAD2" and bound[w].command == "CLICK PadCloseTestWindowPadClose:LeftButton",
+        "while a window is shown, the controller's B button is set to close it")
+    w.padClose.__scripts.OnClick(w.padClose)
+    check(not w:IsShown(), "pressing B closes it")
+    w.__scripts.OnHide(w)
+    check(bound[w] == nil, "and B gets its usual job back once it is closed")
+end
