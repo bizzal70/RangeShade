@@ -30,7 +30,7 @@ On the Forever client the game reports melee abilities as "in range" however far
 
 ## Controller
 
-With a game controller, the **B** button closes the RangeShade options, like the X and Escape do. While a window is open, B closes it; once it is closed, B goes back to whatever you have it set to. (In combat the game does not let addons change a button, so B goes back to normal when the fight ends.)
+With a game controller, the **B** button closes the RangeShade options, like the X and Escape do. While a window is open, B closes it; once it is closed, B goes back to whatever you have it set to. When a fight starts, B goes straight back to its usual job, even with the window open.
 
 ## More from this author
 
