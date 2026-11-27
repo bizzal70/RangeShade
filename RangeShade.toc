@@ -2,7 +2,7 @@
 ## Title: RangeShade
 ## Notes: Shades action bar buttons red when your target is out of range, and flashes them when they come off cooldown. Type /rangeshade.
 ## Author: bizzal70
-## Version: 0.3.2
+## Version: 0.3.3
 ## SavedVariables: RangeShadeDB
 ## IconTexture: Interface\Icons\Ability_Hunter_SniperShot
 ## AddonCompartmentFunc: RangeShade_OnAddonCompartmentClick
@@ -12,3 +12,4 @@ PadClose.lua
 Flash.lua
 Core.lua
 Options.lua
+MinimapButton.lua

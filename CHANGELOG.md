@@ -1,5 +1,9 @@
 # RangeShade
 
+## 0.3.3
+
+- **A minimap button:** click it for the options, drag it around the minimap's rim to move it, and hover it to see what's on. Hide it in the options or with `/rangeshade button`.
+
 ## 0.3.2
 
 - **A ready ability keeps glowing until you use it,** in case you missed the flash: a soft, slow pulse over the button. It pauses for the moment of the global cooldown after each cast (the ability can't be used then anyway) and comes straight back; it stops when you use that ability or the fight ends. Switch it off with `/rangeshade glow` or in the options.

@@ -75,7 +75,7 @@ end
 
 local function CreateWindow()
     window = CreateFrame("Frame", addonName .. "Options", UIParent)
-    window:SetSize(328, 232)
+    window:SetSize(328, 260)
     window:SetPoint("CENTER")
     window:SetFrameStrata("HIGH")
     window:SetToplevel(true)
@@ -126,6 +126,13 @@ local function CreateWindow()
                     return
                 end
             end
+        end)
+    CreateRow(window, -200, true,
+        function() return "Show the minimap button" end,
+        function() return ns.db.minimapButton end,
+        function()
+            ns.db.minimapButton = not ns.db.minimapButton
+            ns.UpdateMinimapButton()
         end)
     CreateRow(window, -172, true,
         function() return "Keep glowing until the ability is used" end,

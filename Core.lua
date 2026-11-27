@@ -35,6 +35,9 @@ local defaults = {
     flash = "combat",
     -- After the flash, keep a soft glow until the ability is used (Flash.lua).
     glow = true,
+    -- The minimap button (MinimapButton.lua), and where on the rim it sits.
+    minimapButton = true,
+    minimapAngle = 2.6,
 }
 
 -- The game's own icon colours, put back when a button is back in range.
@@ -306,6 +309,12 @@ SlashCmdList.RANGESHADE = function(msg)
     elseif command == "melee" then
         ns.db.melee = not ns.db.melee
         ns.Print("Melee abilities are " .. (ns.db.melee and "shaded too." or "left alone."))
+    elseif command == "button" then
+        ns.db.minimapButton = not ns.db.minimapButton
+        ns.UpdateMinimapButton()
+        ns.Print("Minimap button " .. (ns.db.minimapButton and "shown." or "hidden. /rangeshade opens the options."))
+        ns.RefreshOptions()
+        return
     elseif command == "glow" then
         ns.db.glow = not ns.db.glow
         if not ns.db.glow and ns.StopAllGlows then ns.StopAllGlows() end
@@ -361,6 +370,7 @@ SlashCmdList.RANGESHADE = function(msg)
         ns.Print("/rangeshade flash - flash buttons when they come off cooldown: in fights, always, or off")
         ns.Print("/rangeshade flash test - flash every button now, to see what it looks like")
         ns.Print("/rangeshade glow - keep a ready ability glowing until you use it, on or off")
+        ns.Print("/rangeshade button - show or hide the minimap button")
         ns.Print("/rangeshade find - look for action buttons again, and say how many were found")
         ns.Print("/rangeshade debug - list what the game reports for each button, to diagnose shading")
         return

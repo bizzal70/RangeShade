@@ -148,7 +148,7 @@ local rows = {}
 for _, f in ipairs(Frames()) do
     if rawget(f, "Refresh") and f.__scripts.OnClick then rows[#rows + 1] = f end
 end
-check(#rows == 5, "the options have five controls")
+check(#rows == 6, "the options have six controls")
 rows[1].__scripts.OnClick(rows[1])
 check(not ns.db.enabled and colour(ActionButton1) == WHITE, "the first switches shading off, taking effect at once")
 rows[1].__scripts.OnClick(rows[1])
@@ -359,5 +359,17 @@ do
     local timers = AFTERS; AFTERS = {}
     for _, fn in ipairs(timers) do fn() end
     check(next(ns.glowing) == nil, "the flash test's glow stops after a few seconds")
+end
+
+-- The minimap button.
+do
+    local ns = ns3
+    local button = RangeShadeMinimapButton
+    Fire("PLAYER_LOGIN")
+    check(button and button:IsShown() and ns.db.minimapButton, "a minimap button shows by default")
+    SlashCmdList.RANGESHADE("button")
+    check(not button:IsShown() and not ns.db.minimapButton, "/rangeshade button hides it")
+    SlashCmdList.RANGESHADE("button")
+    check(button:IsShown(), "and shows it again")
 end
 
