@@ -148,7 +148,7 @@ local rows = {}
 for _, f in ipairs(Frames()) do
     if rawget(f, "Refresh") and f.__scripts.OnClick then rows[#rows + 1] = f end
 end
-check(#rows == 4, "the options have four controls")
+check(#rows == 5, "the options have five controls")
 rows[1].__scripts.OnClick(rows[1])
 check(not ns.db.enabled and colour(ActionButton1) == WHITE, "the first switches shading off, taking effect at once")
 rows[1].__scripts.OnClick(rows[1])
@@ -311,5 +311,53 @@ do
     check(PRINTED[#PRINTED]:find("Flashed ", 1, true), "/rangeshade flash test flashes the buttons now: " .. PRINTED[#PRINTED])
     InCombatLockdown = function() return false end
     EnumerateFrames = nil
+end
+
+-- The glow that stays until the ability is used.
+do
+    local ns = ns3
+    local FIGHTING = true
+    InCombatLockdown = function() return FIGHTING end
+    UnitAffectingCombat = function() return FIGHTING end
+    local button = CreateFrame("Button", "GlowTestButton")
+    button.cooldown = CreateFrame("Cooldown", "GlowTestButtonCooldown", button)
+    rawset(button, "IsVisible", function() return true end)
+    ns.WatchCooldown(button)
+    local cd = button.cooldown
+    ns.db.flash = "combat"
+    check(ns.db.glow, "the glow starts on")
+    -- Its own cooldown ends in a fight: flash, then glow.
+    cd:SetCooldown(1, 10); NOW = NOW + 10; cd.__scripts.OnCooldownDone(cd)
+    check(ns.glowing[button], "a ready ability keeps glowing")
+    -- Another spell cast: the global cooldown pauses it, then it's back.
+    cd:SetCooldown(1, 1.5); NOW = NOW + 1.5; cd.__scripts.OnCooldownDone(cd)
+    check(ns.glowing[button], "the global cooldown from another cast doesn't end it")
+    -- The ability itself used: its own cooldown runs; the glow is over until it ends.
+    cd:SetCooldown(1, 10); NOW = NOW + 10; cd.__scripts.OnCooldownDone(cd)
+    check(ns.glowing[button], "(ready again after its own cooldown: glowing again)")
+    cd:SetCooldown(1, 10)
+    check(ns.glowing[button], "(paused while its cooldown runs)")
+    -- Fight over: every glow stops.
+    FIGHTING = false
+    Fire("PLAYER_REGEN_ENABLED")
+    check(not ns.glowing[button], "the glow stops when the fight ends")
+    -- Switched off.
+    FIGHTING = true
+    SlashCmdList.RANGESHADE("glow")
+    cd:SetCooldown(1, 10); NOW = NOW + 10; cd.__scripts.OnCooldownDone(cd)
+    check(not ns.glowing[button] and not ns.db.glow, "/rangeshade glow switches it off (the flash stays)")
+    SlashCmdList.RANGESHADE("glow")
+    FIGHTING = false
+    InCombatLockdown = function() return false end
+end
+
+-- The flash test shows the glow too, then stops it.
+do
+    local ns = ns3
+    AFTERS = {}
+    SlashCmdList.RANGESHADE("flash test")
+    local timers = AFTERS; AFTERS = {}
+    for _, fn in ipairs(timers) do fn() end
+    check(next(ns.glowing) == nil, "the flash test's glow stops after a few seconds")
 end
 

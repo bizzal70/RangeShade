@@ -1,5 +1,9 @@
 # RangeShade
 
+## 0.3.2
+
+- **A ready ability keeps glowing until you use it,** in case you missed the flash: a soft, slow pulse over the button. It pauses for the moment of the global cooldown after each cast (the ability can't be used then anyway) and comes straight back; it stops when you use that ability or the fight ends. Switch it off with `/rangeshade glow` or in the options.
+
 ## 0.3.1
 
 - **Works on the controller layout's buttons too.** RangeShade used to look only at the standard action bars by name, so the round buttons of the game's controller layout (and other bar addons' buttons) were neither shaded nor flashed. It now finds any button that holds an action.

@@ -33,6 +33,8 @@ local defaults = {
     -- Flash a button when its ability comes off cooldown (Flash.lua):
     -- "combat" (in fights only), "always" or "off".
     flash = "combat",
+    -- After the flash, keep a soft glow until the ability is used (Flash.lua).
+    glow = true,
 }
 
 -- The game's own icon colours, put back when a button is back in range.
@@ -304,6 +306,12 @@ SlashCmdList.RANGESHADE = function(msg)
     elseif command == "melee" then
         ns.db.melee = not ns.db.melee
         ns.Print("Melee abilities are " .. (ns.db.melee and "shaded too." or "left alone."))
+    elseif command == "glow" then
+        ns.db.glow = not ns.db.glow
+        if not ns.db.glow and ns.StopAllGlows then ns.StopAllGlows() end
+        ns.Print("After the flash, a ready ability " .. (ns.db.glow and "keeps glowing until you use it." or "doesn't keep glowing."))
+        ns.RefreshOptions()
+        return
     elseif command == "find" then
         FindButtons()
         local standard, other, swirls, names = 0, 0, 0, {}
@@ -352,6 +360,7 @@ SlashCmdList.RANGESHADE = function(msg)
         ns.Print("/rangeshade melee - whether melee abilities are shaded too")
         ns.Print("/rangeshade flash - flash buttons when they come off cooldown: in fights, always, or off")
         ns.Print("/rangeshade flash test - flash every button now, to see what it looks like")
+        ns.Print("/rangeshade glow - keep a ready ability glowing until you use it, on or off")
         ns.Print("/rangeshade find - look for action buttons again, and say how many were found")
         ns.Print("/rangeshade debug - list what the game reports for each button, to diagnose shading")
         return

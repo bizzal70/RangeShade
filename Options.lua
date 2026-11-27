@@ -75,7 +75,7 @@ end
 
 local function CreateWindow()
     window = CreateFrame("Frame", addonName .. "Options", UIParent)
-    window:SetSize(328, 204)
+    window:SetSize(328, 232)
     window:SetPoint("CENTER")
     window:SetFrameStrata("HIGH")
     window:SetToplevel(true)
@@ -126,6 +126,13 @@ local function CreateWindow()
                     return
                 end
             end
+        end)
+    CreateRow(window, -172, true,
+        function() return "Keep glowing until the ability is used" end,
+        function() return ns.db.glow end,
+        function()
+            ns.db.glow = not ns.db.glow
+            if not ns.db.glow and ns.StopAllGlows then ns.StopAllGlows() end
         end)
     -- Cycles: in fights, always, off.
     CreateRow(window, -142, false,
