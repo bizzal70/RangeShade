@@ -58,6 +58,17 @@ local function Usable(value)
     return value ~= nil and not (issecretvalue and issecretvalue(value))
 end
 
+-- The action slot a button holds, or nil.
+local function SlotOf(button)
+    local slot = rawget(button, "action")
+    if slot == nil and button.GetAttribute then
+        local ok, value = pcall(button.GetAttribute, button, "action")
+        if ok then slot = value end
+    end
+    return Usable(slot) and type(slot) == "number" and slot or nil
+end
+ns.SlotOf = SlotOf
+
 function ns.Strength()
     for _, strength in ipairs(ns.STRENGTHS) do
         if strength.key == ns.db.strength then return strength end
@@ -167,8 +178,8 @@ local function PrintDebug(buttons)
     local shown = 0
     for _, entry in ipairs(buttons) do
         local button = entry.button
-        local slot = button.action
-        if Usable(slot) and slot ~= 0 and button:IsVisible() then
+        local slot = SlotOf(button)
+        if slot and slot ~= 0 and button:IsVisible() then
             local actionType, id = GetActionInfo(slot)
             if Usable(actionType) then
                 shown = shown + 1
@@ -212,39 +223,68 @@ local function Check()
     local red = ns.Strength().color
     for _, entry in ipairs(buttons) do
         local button = entry.button
-        local slot = button.action
-        if enabled and button:IsVisible() and OutOfRange(slot) then
-            shaded[button] = true
-            Tint(entry.icon, red)
-        elseif shaded[button] then
-            shaded[button] = nil
-            Restore(entry.icon, slot)
+        if entry.icon then
+            local slot = SlotOf(button)
+            if enabled and button:IsVisible() and OutOfRange(slot) then
+                shaded[button] = true
+                Tint(entry.icon, red)
+            elseif shaded[button] then
+                shaded[button] = nil
+                Restore(entry.icon, slot)
+            end
         end
     end
 end
 
 ns.Check = Check
 
+local seen = {}   -- button -> true once added
+ns.buttons = buttons
+
+local function AddButton(button, icon)
+    if seen[button] then return end
+    seen[button] = true
+    buttons[#buttons + 1] = { button = button, icon = icon }
+    if icon and button.UpdateUsable then
+        -- The game recolours an icon whenever the action's usability
+        -- changes. Tint it again straight away so it does not flash.
+        pcall(hooksecurefunc, button, "UpdateUsable", function(self)
+            if shaded[self] then
+                Tint(icon, ns.Strength().color)
+            end
+        end)
+    end
+    if ns.WatchCooldown then pcall(ns.WatchCooldown, button) end
+end
+
+-- Finds action buttons: the standard bars by name, and any other button
+-- that holds an action (the controller layout's round buttons, and other
+-- bar addons' buttons). Safe to run again: each button is added once.
 local function FindButtons()
     for _, bar in ipairs(BARS) do
         for index = 1, BUTTONS_PER_BAR do
             local button = _G[bar .. index]
             local icon = button and (button.icon or _G[bar .. index .. "Icon"])
-            if button and icon then
-                buttons[#buttons + 1] = { button = button, icon = icon }
-                -- The game recolours an icon whenever the action's usability
-                -- changes. Tint it again straight away so it does not flash.
-                if button.UpdateUsable then
-                    hooksecurefunc(button, "UpdateUsable", function(self)
-                        if shaded[self] then
-                            Tint(icon, ns.Strength().color)
-                        end
-                    end)
+            if button and icon then AddButton(button, icon) end
+        end
+    end
+    if EnumerateFrames then
+        local frame = EnumerateFrames()
+        while frame do
+            if not seen[frame] then
+                local ok, isButton = pcall(function()
+                    return (frame:IsObjectType("CheckButton") or frame:IsObjectType("Button")) and SlotOf(frame) ~= nil
+                end)
+                if ok and isButton then
+                    local name = frame.GetName and frame:GetName()
+                    AddButton(frame, frame.icon or frame.Icon or (name and _G[name .. "Icon"]) or nil)
                 end
             end
+            frame = EnumerateFrames(frame)
         end
     end
 end
+ns.FindButtons = FindButtons
 
 SLASH_RANGESHADE1 = "/rangeshade"
 SLASH_RANGESHADE2 = "/rshade"
@@ -264,7 +304,32 @@ SlashCmdList.RANGESHADE = function(msg)
     elseif command == "melee" then
         ns.db.melee = not ns.db.melee
         ns.Print("Melee abilities are " .. (ns.db.melee and "shaded too." or "left alone."))
+    elseif command == "find" then
+        FindButtons()
+        local standard, other, swirls, names = 0, 0, 0, {}
+        local isStandard = {}
+        for _, bar in ipairs(BARS) do
+            for index = 1, BUTTONS_PER_BAR do
+                local button = _G[bar .. index]
+                if button then isStandard[button] = true end
+            end
+        end
+        for _, entry in ipairs(buttons) do
+            if isStandard[entry.button] then standard = standard + 1 else
+                other = other + 1
+                if #names < 8 then names[#names + 1] = (entry.button.GetName and entry.button:GetName()) or "(no name)" end
+            end
+            if ns.CooldownOf and ns.CooldownOf(entry.button) then swirls = swirls + 1 end
+        end
+        ns.Print(("Watching %d standard and %d other action buttons (%d with a cooldown swirl).%s"):format(standard, other, swirls,
+            #names > 0 and (" Others: " .. table.concat(names, ", ")) or ""))
+        return
     elseif command == "flash" then
+        if (msg or ""):lower():find("test", 1, true) then
+            local count = ns.FlashTest and ns.FlashTest() or 0
+            ns.Print(("Flashed %d button%s that are on screen."):format(count, count == 1 and "" or "s"))
+            return
+        end
         for index, mode in ipairs(ns.FLASH_MODES) do
             if mode.key == ns.FlashMode().key then
                 ns.db.flash = ns.FLASH_MODES[index % #ns.FLASH_MODES + 1].key
@@ -276,6 +341,9 @@ SlashCmdList.RANGESHADE = function(msg)
         return
     elseif command == "debug" then
         PrintDebug(buttons)
+        ns.Print(("Flash: %s; %d button%s watched; cooldowns seen starting %d, finishing %d; flashes %d.")
+            :format(ns.FlashMode().label:lower(), #buttons, #buttons == 1 and "" or "s",
+                ns.cooldownStarts or 0, ns.cooldownsDone or 0, ns.flashes or 0))
         return
     else
         ns.Print("/rangeshade - open the options")
@@ -283,6 +351,8 @@ SlashCmdList.RANGESHADE = function(msg)
         ns.Print("/rangeshade strong or soft - how red the shading is")
         ns.Print("/rangeshade melee - whether melee abilities are shaded too")
         ns.Print("/rangeshade flash - flash buttons when they come off cooldown: in fights, always, or off")
+        ns.Print("/rangeshade flash test - flash every button now, to see what it looks like")
+        ns.Print("/rangeshade find - look for action buttons again, and say how many were found")
         ns.Print("/rangeshade debug - list what the game reports for each button, to diagnose shading")
         return
     end
@@ -314,6 +384,9 @@ frame:SetScript("OnEvent", function(self, event, loaded, blockedFunction)
     elseif event == "PLAYER_LOGIN" then
         FindButtons()
         C_Timer.NewTicker(CHECK_SECONDS, Check)
+        -- Some layouts (the controller's) build their buttons a little later.
+        C_Timer.After(2, function() pcall(FindButtons) end)
+        C_Timer.After(10, function() pcall(FindButtons) end)
     elseif loaded == addonName and Usable(blockedFunction) and blockedFunction:find("CheckInteractDistance", 1, true) then
         -- The client refused the melee distance check. Stop asking, so it
         -- does not complain again; everything else carries on.

@@ -54,15 +54,49 @@ local function InFight()
     return fighting == true
 end
 
+-- A button's cooldown swirl: by the usual names, or any Cooldown child.
+function ns.CooldownOf(button)
+    local name = button.GetName and button:GetName()
+    local cooldown = rawget(button, "cooldown") or rawget(button, "Cooldown") or (name and _G[name .. "Cooldown"])
+    if cooldown then return cooldown end
+    if button.GetChildren then
+        local ok, children = pcall(function() return { button:GetChildren() } end)
+        for _, child in ipairs(ok and children or {}) do
+            local okType, isCooldown = pcall(child.IsObjectType, child, "Cooldown")
+            if okType and isCooldown then return child end
+        end
+    end
+end
+
+ns.cooldownStarts, ns.cooldownsDone = 0, 0
+local flashes = {}   -- button -> its flash, for /rangeshade flash test
+
+-- Plays every watched button's flash now; returns how many.
+function ns.FlashTest()
+    local count = 0
+    for button, flash in pairs(flashes) do
+        if button:IsVisible() then
+            flash:Stop()
+            flash:Play()
+            count = count + 1
+        end
+    end
+    return count
+end
+
 -- Watches one action button's cooldown swirl.
 function ns.WatchCooldown(button)
-    local cooldown = button.cooldown or (button.GetName and button:GetName() and _G[button:GetName() .. "Cooldown"])
+    local cooldown = ns.CooldownOf(button)
     if not cooldown or cooldown.rangeShadeWatched then return end
     cooldown.rangeShadeWatched = true
     local flash = MakeFlash(button)
+    flashes[button] = flash
     local started
     local function Start()
-        if not started then started = GetTime() end
+        if not started then
+            started = GetTime()
+            ns.cooldownStarts = ns.cooldownStarts + 1
+        end
     end
     for _, method in ipairs({ "SetCooldown", "SetCooldownFromDurationObject", "SetCooldownDuration" }) do
         if type(cooldown[method]) == "function" then pcall(hooksecurefunc, cooldown, method, Start) end
@@ -73,6 +107,7 @@ function ns.WatchCooldown(button)
     cooldown:HookScript("OnCooldownDone", function()
         local since = started
         started = nil
+        ns.cooldownsDone = ns.cooldownsDone + 1
         if not since or not ns.db then return end
         local mode = ns.FlashMode().key
         if mode == "off" or (mode == "combat" and not InFight()) then return end
@@ -84,13 +119,3 @@ function ns.WatchCooldown(button)
     end)
 end
 
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function()
-    for _, bar in ipairs(ns.BARS or {}) do
-        for index = 1, 12 do
-            local button = _G[bar .. index]
-            if button then pcall(ns.WatchCooldown, button) end
-        end
-    end
-end)

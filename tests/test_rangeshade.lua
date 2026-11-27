@@ -276,3 +276,40 @@ do
     FIGHTING = false
 end
 
+-- Buttons found by what they are: the controller layout's round buttons.
+do
+    local ns = ns3
+    local ALL = {}
+    local pad = CreateFrame("CheckButton", "GamepadActionButton7")
+    pad.action = 30
+    pad.icon = pad:CreateTexture()
+    local swirl = CreateFrame("Cooldown", nil, pad)
+    rawset(pad, "GetChildren", function() return swirl end)
+    rawset(swirl, "IsObjectType", function(_, kind) return kind == "Cooldown" end)
+    rawset(pad, "IsObjectType", function(_, kind) return kind == "CheckButton" end)
+    rawset(pad, "IsVisible", function() return true end)
+    local plain = CreateFrame("Frame", "NotAButton")
+    rawset(plain, "IsObjectType", function() return false end)
+    ALL = { pad, plain }
+    EnumerateFrames = function(after)
+        if after == nil then return ALL[1] end
+        for i, f in ipairs(ALL) do if f == after then return ALL[i + 1] end end
+    end
+    SlashCmdList.RANGESHADE("find")
+    check(PRINTED[#PRINTED]:find("and 1 other action buttons (", 1, true) and PRINTED[#PRINTED]:find("GamepadActionButton7", 1, true),
+        "a controller-layout button holding an action is found: " .. PRINTED[#PRINTED])
+    SlashCmdList.RANGESHADE("find")
+    check(PRINTED[#PRINTED]:find("and 1 other", 1, true), "and only once, however often it looks")
+    -- Its swirl is watched: a real cooldown in a fight flashes it.
+    local before = ns.flashes
+    InCombatLockdown = function() return true end
+    swirl:SetCooldown(1, 10)
+    NOW = NOW + 10
+    swirl.__scripts.OnCooldownDone(swirl)
+    check(ns.flashes == before + 1, "and its cooldown flashes it when ready")
+    SlashCmdList.RANGESHADE("flash test")
+    check(PRINTED[#PRINTED]:find("Flashed ", 1, true), "/rangeshade flash test flashes the buttons now: " .. PRINTED[#PRINTED])
+    InCombatLockdown = function() return false end
+    EnumerateFrames = nil
+end
+

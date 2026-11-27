@@ -1,5 +1,10 @@
 # RangeShade
 
+## 0.3.1
+
+- **Works on the controller layout's buttons too.** RangeShade used to look only at the standard action bars by name, so the round buttons of the game's controller layout (and other bar addons' buttons) were neither shaded nor flashed. It now finds any button that holds an action.
+- `/rangeshade find` says how many buttons it is watching; `/rangeshade flash test` flashes every button on screen at once so you can see the flash; `/rangeshade debug` now also counts cooldowns seen.
+
 ## 0.3.0
 
 - **Flashes a button when its ability is ready again:** when an ability comes off cooldown, its button gives two quick bright pulses, so you see it's ready without watching the swirl. In fights only by default; switch it to always or off in the options or with `/rangeshade flash`.
