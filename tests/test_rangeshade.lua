@@ -148,7 +148,7 @@ local rows = {}
 for _, f in ipairs(Frames()) do
     if rawget(f, "Refresh") and f.__scripts.OnClick then rows[#rows + 1] = f end
 end
-check(#rows == 6, "the options have six controls")
+check(#rows == 7, "the options have seven controls")
 rows[1].__scripts.OnClick(rows[1])
 check(not ns.db.enabled and colour(ActionButton1) == WHITE, "the first switches shading off, taking effect at once")
 rows[1].__scripts.OnClick(rows[1])
@@ -371,5 +371,71 @@ do
     check(not button:IsShown() and not ns.db.minimapButton, "/rangeshade button hides it")
     SlashCmdList.RANGESHADE("button")
     check(button:IsShown(), "and shows it again")
+end
+
+-- 0.4.0: melee refused in a fight, the red border, bindings.
+do
+    -- A fresh copy (earlier tests deliberately broke the melee check of
+    -- the others, which switches it off for their session).
+    BREAK_MELEE = false
+    local ns = LoadAddon(ADDON_DIR, "RangeShade")
+    Fire("ADDON_LOADED", "RangeShade")
+    Fire("PLAYER_LOGIN")
+    ns.db.enabled, ns.db.strength = true, "strong"
+    ActionButton11.__shown, ActionButton12.__shown = true, true
+    local FIGHTING = false
+    InCombatLockdown = function() return FIGHTING end
+    -- A melee button on the first bar, target far away.
+    SPELLS[11] = { 401, 5, true }
+    HAS_RANGE[11], IN_RANGE[11] = false, nil
+    TARGET = { hostile = true, near = false }
+    ns.db.melee = true
+    Fire("ACTIONBAR_SLOT_CHANGED", 11)
+    ns.Check()
+    check(ns.Check and ActionButton11.icon.__color and ActionButton11.icon.__color[1] > 0.8, "out of a fight, a far melee target shades a melee button")
+    -- In a fight the game refuses the check.
+    FIGHTING = true
+    local said = #PRINTED
+    Fire("ADDON_ACTION_BLOCKED", "RangeShade", "CheckInteractDistance()")
+    check(PRINTED[#PRINTED]:find("shaded only out of fights", 1, true), "a refusal in a fight says melee is shaded only out of fights")
+    local checks = DISTANCE_CHECKS
+    ns.Check()
+    check(DISTANCE_CHECKS == checks, "and it stops asking during the fight")
+    FIGHTING = false
+    Fire("PLAYER_REGEN_ENABLED")
+    ns.Check()
+    check(DISTANCE_CHECKS > checks, "after the fight it measures again")
+    FIGHTING = true
+    checks = DISTANCE_CHECKS
+    ns.Check()
+    check(DISTANCE_CHECKS == checks, "and in later fights it doesn't try (no repeated errors)")
+    FIGHTING = false
+    -- Asked once per pass, however many melee buttons.
+    SPELLS[12] = { 402, 5, true }
+    Fire("ACTIONBAR_SLOT_CHANGED", 12)
+    checks = DISTANCE_CHECKS
+    ns.Check()
+    check(DISTANCE_CHECKS == checks + 1, "the distance is measured once per pass, not per button")
+    -- The red border.
+    check(not ns.db.border, "the red border starts off")
+    SlashCmdList.RANGESHADE("border")
+    ns.Check()
+    check(ns.borders[ActionButton11] and ns.borders[ActionButton11]:IsShown(), "/rangeshade border adds a red border to shaded buttons")
+    TARGET = { hostile = true, near = true }
+    ns.Check()
+    check(not ns.borders[ActionButton11]:IsShown(), "and it goes when the target is in reach")
+    SlashCmdList.RANGESHADE("border")
+    TARGET = nil
+    SPELLS[11], SPELLS[12] = nil, nil
+    -- Bindings and the welcome line.
+    check(type(RangeShade_ToggleOptions) == "function" and type(RangeShade_Toggle) == "function", "key bindings for the options and for shading on/off")
+    -- (Several copies of the addon are loaded in these tests, each with its
+    -- own settings, so each may say it once; the point is: never twice.)
+    Fire("PLAYER_ENTERING_WORLD")
+    said = #PRINTED
+    Fire("PLAYER_ENTERING_WORLD")
+    local again = 0
+    for i = said + 1, #PRINTED do if PRINTED[i]:find("out-of-range buttons turn red", 1, true) then again = again + 1 end end
+    check(again == 0, "the welcome line isn't repeated")
 end
 

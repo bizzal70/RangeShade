@@ -35,6 +35,8 @@ local defaults = {
     flash = "combat",
     -- After the flash, keep a soft glow until the ability is used (Flash.lua).
     glow = true,
+    -- A red border around shaded buttons too (Core.lua).
+    border = false,
     -- The minimap button (MinimapButton.lua), and where on the rim it sits.
     minimapButton = true,
     minimapAngle = 2.6,
@@ -97,8 +99,24 @@ local MELEE_REACH_YARDS = 5
 -- CheckInteractDistance's index for the duelling distance, about 10 yards.
 local DUEL_DISTANCE = 3
 
-local meleeRefused = false   -- the client would not allow the distance check
+local meleeRefused = false   -- the melee check broke (an API difference): off for the session
+-- The game refused the distance check in a fight: melee shading pauses
+-- until the fight ends, and isn't tried in later fights.
+local refusedThisFight = false
+local refusedInFights = false
 local reachCache = {}        -- spell id -> its reach in yards, or false
+local meleeCache = {}        -- action slot -> { id, melee }: the spell on it and whether it's a melee attack
+
+local function InFight()
+    return InCombatLockdown and InCombatLockdown() or false
+end
+
+-- Whether the melee check may be tried now.
+local function MeleeAllowed()
+    if meleeRefused or refusedThisFight then return false end
+    if refusedInFights and InFight() then return false end
+    return true
+end
 
 -- How far a spell reaches, or nil if the client will not say.
 local function SpellReach(spellID)
@@ -129,7 +147,7 @@ end
 
 -- Whether there is something to attack and it is too far away to hit.
 local function TargetBeyondMelee()
-    if meleeRefused then return false end
+    if not MeleeAllowed() then return false end
     local exists = UnitExists("target")
     if not Usable(exists) or not exists then return false end
     local hostile = UnitCanAttack("player", "target")
@@ -149,12 +167,28 @@ local function OutOfRange(slot)
             return true
         end
     end
-    if not ns.db.melee or meleeRefused then return false end
+    if not ns.db.melee or not MeleeAllowed() then return false end
     -- The melee check leans on parts of the game's API that could not be
     -- tried before release. If one of them objects, melee shading switches
     -- itself off with a single message; ordinary range shading, above,
     -- never depends on it.
-    local ok, result = pcall(function() return IsMelee(slot) and TargetBeyondMelee() end)
+    local ok, result = pcall(function()
+        -- Remembered per slot and the spell on it, so a changed button is
+        -- worked out again even if the game's event was missed.
+        local _, id = GetActionInfo(slot)
+        local known = meleeCache[slot]
+        local melee
+        if known and known.id == id then
+            melee = known.melee
+        else
+            melee = IsMelee(slot)
+            meleeCache[slot] = { id = id, melee = melee }
+        end
+        if not melee then return false end
+        -- Asked once per pass over the buttons, not once per button.
+        if ns.beyondThisPass == nil then ns.beyondThisPass = TargetBeyondMelee() end
+        return ns.beyondThisPass
+    end)
     if not ok then
         meleeRefused = true
         ns.Print("Melee shading ran into a problem and has switched itself off: " .. tostring(result))
@@ -223,9 +257,27 @@ local function Restore(icon, slot)
     Tint(icon, color)
 end
 
+-- 3. An optional red border around a shaded button, easier to see on a
+-- small screen. Made when the button is found, before any fight.
+local borders = {}
+local function MakeBorder(button)
+    local border = button:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    if border.SetBlendMode then border:SetBlendMode("ADD") end
+    border:SetVertexColor(1, 0.1, 0.1)
+    local width = button.GetWidth and button:GetWidth() or 36
+    border:SetSize(width * 1.8, width * 1.8)
+    border:SetPoint("CENTER", button, "CENTER")
+    border:Hide()
+    borders[button] = border
+    return border
+end
+ns.borders = borders
+
 local function Check()
     local enabled = ns.db.enabled
     local red = ns.Strength().color
+    ns.beyondThisPass = nil
     for _, entry in ipairs(buttons) do
         local button = entry.button
         if entry.icon then
@@ -233,9 +285,12 @@ local function Check()
             if enabled and button:IsVisible() and OutOfRange(slot) then
                 shaded[button] = true
                 Tint(entry.icon, red)
+                local border = borders[button]
+                if border then border:SetShown(ns.db.border and true or false) end
             elseif shaded[button] then
                 shaded[button] = nil
                 Restore(entry.icon, slot)
+                if borders[button] then borders[button]:Hide() end
             end
         end
     end
@@ -260,6 +315,7 @@ local function AddButton(button, icon)
         end)
     end
     if ns.WatchCooldown then pcall(ns.WatchCooldown, button) end
+    if icon then pcall(MakeBorder, button) end
 end
 
 -- Finds action buttons: the standard bars by name, and any other button
@@ -309,6 +365,12 @@ SlashCmdList.RANGESHADE = function(msg)
     elseif command == "melee" then
         ns.db.melee = not ns.db.melee
         ns.Print("Melee abilities are " .. (ns.db.melee and "shaded too." or "left alone."))
+    elseif command == "border" then
+        ns.db.border = not ns.db.border
+        if not ns.db.border then for _, border in pairs(borders) do border:Hide() end end
+        ns.Print("Red border around out-of-range buttons " .. (ns.db.border and "on." or "off."))
+        ns.RefreshOptions()
+        return
     elseif command == "button" then
         ns.db.minimapButton = not ns.db.minimapButton
         ns.UpdateMinimapButton()
@@ -371,6 +433,7 @@ SlashCmdList.RANGESHADE = function(msg)
         ns.Print("/rangeshade flash test - flash every button now, to see what it looks like")
         ns.Print("/rangeshade glow - keep a ready ability glowing until you use it, on or off")
         ns.Print("/rangeshade button - show or hide the minimap button")
+        ns.Print("/rangeshade border - a red border around out-of-range buttons too, on or off")
         ns.Print("/rangeshade find - look for action buttons again, and say how many were found")
         ns.Print("/rangeshade debug - list what the game reports for each button, to diagnose shading")
         return
@@ -406,14 +469,41 @@ frame:SetScript("OnEvent", function(self, event, loaded, blockedFunction)
         -- Some layouts (the controller's) build their buttons a little later.
         C_Timer.After(2, function() pcall(FindButtons) end)
         C_Timer.After(10, function() pcall(FindButtons) end)
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        -- A fight over: melee shading may be tried again.
+        refusedThisFight = false
+    elseif event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR" then
+        -- What's on the buttons changed: work out again which are melee.
+        meleeCache = {}
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        if ns.db and not ns.db.welcomed then
+            ns.db.welcomed = true
+            ns.Print("On: out-of-range buttons turn red, and buttons flash when an ability is ready again in a fight. /rangeshade or the minimap button for options.")
+        end
     elseif loaded == addonName and Usable(blockedFunction) and blockedFunction:find("CheckInteractDistance", 1, true) then
-        -- The client refused the melee distance check. Stop asking, so it
-        -- does not complain again; everything else carries on.
-        if not meleeRefused then
+        -- The game refused the melee distance check. In a fight that only
+        -- pauses melee shading until the fight ends (and later fights skip
+        -- it); everything else carries on.
+        if InFight() then
+            refusedThisFight = true
+            if not refusedInFights then
+                refusedInFights = true
+                ns.Print("The game doesn't let addons measure melee distance in a fight, so melee buttons are shaded only out of fights. Ranged ones are shaded as usual.")
+            end
+        elseif not meleeRefused then
             meleeRefused = true
             ns.Print("The game does not let addons measure melee distance here, so melee abilities are not shaded.")
         end
     end
 end)
-pcall(frame.RegisterEvent, frame, "ADDON_ACTION_FORBIDDEN")
-pcall(frame.RegisterEvent, frame, "ADDON_ACTION_BLOCKED")
+for _, event in ipairs({ "ADDON_ACTION_FORBIDDEN", "ADDON_ACTION_BLOCKED", "PLAYER_REGEN_ENABLED", "ACTIONBAR_SLOT_CHANGED",
+        "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "PLAYER_ENTERING_WORLD" }) do
+    pcall(frame.RegisterEvent, frame, event)
+end
+
+-- Key bindings (Key Bindings > AddOns > RangeShade).
+BINDING_HEADER_RANGESHADE = "RangeShade"
+BINDING_NAME_RANGESHADE_OPTIONS = "Open RangeShade's options"
+BINDING_NAME_RANGESHADE_TOGGLE = "Shading on or off"
+function RangeShade_ToggleOptions() ns.ToggleOptions() end
+function RangeShade_Toggle() SlashCmdList.RANGESHADE("toggle") end

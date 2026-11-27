@@ -1,5 +1,13 @@
 # RangeShade
 
+## 0.4.0
+
+- **Melee shading no longer switches itself off for good.** Where the game won't let addons measure melee distance in a fight, melee buttons are now shaded only out of fights (one chat line says so); before, one refusal turned melee shading off for the whole session. Ranged buttons are shaded as usual.
+- **Lighter on the game:** whether the target is beyond melee reach is worked out once per update instead of once per button, and which buttons hold melee attacks is remembered until your bars change. This matters more now that RangeShade watches the controller layout's buttons too.
+- **Optional red border** around out-of-range buttons, easier to see on a small screen: in the options or `/rangeshade border`. Off by default.
+- Listed in the game's own Options > AddOns. Key bindings to open the options and to switch shading on or off. The options window remembers where you put it. A one-time line on first login says what RangeShade does.
+- Works with action bar addons whose buttons hold an action the standard way (Bartender, Dominos, ElvUI and similar), as well as the controller layout.
+
 ## 0.3.3
 
 - **A minimap button:** click it for the options, drag it around the minimap's rim to move it, and hover it to see what's on. Hide it in the options or with `/rangeshade button`.

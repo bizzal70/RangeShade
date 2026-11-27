@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="RANGESHADE_OPTIONS" header="RANGESHADE" category="ADDONS">
+		RangeShade_ToggleOptions()
+	</Binding>
+	<Binding name="RANGESHADE_TOGGLE" category="ADDONS">
+		RangeShade_Toggle()
+	</Binding>
+</Bindings>
