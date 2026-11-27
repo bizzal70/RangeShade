@@ -1,5 +1,11 @@
 # RangeShade
 
+## 0.3.0
+
+- **Flashes a button when its ability is ready again:** when an ability comes off cooldown, its button gives two quick bright pulses, so you see it's ready without watching the swirl. In fights only by default; switch it to always or off in the options or with `/rangeshade flash`.
+- The short global cooldown every spell shares never flashes, only real cooldowns (two seconds or more). This works even where the game hides cooldown lengths from addons in a fight: RangeShade times the swirl itself.
+- Pairs well with the game's own "Show Numbers for Cooldowns" (Options > Action Bars), which counts the seconds down on the swirl.
+
 ## 0.2.4
 
 - **Controller:** when a fight starts, B goes straight back to its usual job, even with a RangeShade window open (it used to stay on closing the window until the fight ended). It closes the window again once the fight is over.

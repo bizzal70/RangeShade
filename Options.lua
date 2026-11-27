@@ -75,7 +75,7 @@ end
 
 local function CreateWindow()
     window = CreateFrame("Frame", addonName .. "Options", UIParent)
-    window:SetSize(328, 168)
+    window:SetSize(328, 204)
     window:SetPoint("CENTER")
     window:SetFrameStrata("HIGH")
     window:SetToplevel(true)
@@ -123,6 +123,18 @@ local function CreateWindow()
             for index, strength in ipairs(ns.STRENGTHS) do
                 if strength.key == ns.Strength().key then
                     ns.db.strength = ns.STRENGTHS[index % #ns.STRENGTHS + 1].key
+                    return
+                end
+            end
+        end)
+    -- Cycles: in fights, always, off.
+    CreateRow(window, -142, false,
+        function() return "Flash when ready: " .. ns.FlashMode().label end,
+        nil,
+        function()
+            for index, mode in ipairs(ns.FLASH_MODES) do
+                if mode.key == ns.FlashMode().key then
+                    ns.db.flash = ns.FLASH_MODES[index % #ns.FLASH_MODES + 1].key
                     return
                 end
             end

@@ -2,6 +2,8 @@
 
 Shades action bar buttons red when your target is out of range. An addon for World of Warcraft: Forever (client 1.60.x).
 
+**Flashes buttons when they're ready again:** when an ability comes off cooldown, its button gives two quick bright pulses, so you see it's ready without watching the swirl. In fights only by default (`/rangeshade flash` cycles: in fights, always, off). The short global cooldown never flashes. Pairs well with the game's own "Show Numbers for Cooldowns" (Options > Action Bars).
+
 ## What it does
 
 When an ability cannot reach your target, World of Warcraft only turns the small keybind text on its button red. RangeShade tints the whole icon red, so it is obvious at a glance.

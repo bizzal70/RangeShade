@@ -148,7 +148,7 @@ local rows = {}
 for _, f in ipairs(Frames()) do
     if rawget(f, "Refresh") and f.__scripts.OnClick then rows[#rows + 1] = f end
 end
-check(#rows == 3, "the options have three controls")
+check(#rows == 4, "the options have four controls")
 rows[1].__scripts.OnClick(rows[1])
 check(not ns.db.enabled and colour(ActionButton1) == WHITE, "the first switches shading off, taking effect at once")
 rows[1].__scripts.OnClick(rows[1])
@@ -223,3 +223,56 @@ do
     check(bound[w] == "PAD2", "and borrowed again once the fight is over")
     w:Hide(); w.__scripts.OnHide(w)
 end
+
+-- Flashing when an ability comes off cooldown.
+do
+    local ns = ns3   -- the addon as loaded the second time (after the reload test)
+    local FIGHTING = false
+    UnitAffectingCombat = function() return FIGHTING end
+    InCombatLockdown = function() return FIGHTING end
+    local button = CreateFrame("Button", "FlashTestButton")
+    button.cooldown = CreateFrame("Cooldown", "FlashTestButtonCooldown", button)
+    rawset(button, "IsVisible", function() return true end)
+    ns.WatchCooldown(button)
+    local cd = button.cooldown
+    local before = ns.flashes
+    check(ns.db.flash == "combat", "flashing starts on, for fights")
+    -- In a fight, a real cooldown ends: flash.
+    FIGHTING = true
+    cd:SetCooldown(SECRET, SECRET)   -- the lengths may be withheld; never read
+    NOW = NOW + 8
+    cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 1, "a real cooldown ending in a fight flashes the button")
+    -- The global cooldown alone: no flash.
+    cd:SetCooldown(SECRET, SECRET)
+    NOW = NOW + 1.5
+    cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 1, "the short global cooldown doesn't flash")
+    -- Set again while it's still running: still timed from the start.
+    cd:SetCooldown(SECRET, SECRET)
+    NOW = NOW + 1
+    cd:SetCooldown(SECRET, SECRET)
+    NOW = NOW + 1.5
+    cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 2, "timed from when the cooldown first started")
+    -- Out of a fight: not by default; always flashes; off never.
+    FIGHTING = false
+    cd:SetCooldown(1, 30); NOW = NOW + 30; cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 2, "out of a fight, no flash by default")
+    SlashCmdList.RANGESHADE("flash")
+    check(ns.db.flash == "always", "/rangeshade flash switches to always")
+    cd:SetCooldown(1, 30); NOW = NOW + 30; cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 3, "and then it flashes out of fights too")
+    SlashCmdList.RANGESHADE("flash")
+    FIGHTING = true
+    cd:SetCooldown(1, 30); NOW = NOW + 30; cd.__scripts.OnCooldownDone(cd)
+    check(ns.db.flash == "off" and ns.flashes == before + 3, "and off never flashes")
+    SlashCmdList.RANGESHADE("flash")
+    check(ns.db.flash == "combat", "and round again to fights only")
+    -- A cooldown cleared early (reset) doesn't flash later on a stale start.
+    cd:SetCooldown(1, 30); cd:Clear(); NOW = NOW + 30
+    cd.__scripts.OnCooldownDone(cd)
+    check(ns.flashes == before + 3, "a cleared cooldown doesn't flash")
+    FIGHTING = false
+end
+

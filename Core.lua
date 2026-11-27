@@ -14,6 +14,7 @@ local BARS = {
     "MultiBarRightButton", "MultiBarLeftButton",
     "MultiBar5Button", "MultiBar6Button", "MultiBar7Button",
 }
+ns.BARS = BARS
 local BUTTONS_PER_BAR = 12
 local CHECK_SECONDS = 0.1
 
@@ -29,6 +30,9 @@ local defaults = {
     -- Whether melee abilities are shaded too, using the rougher check
     -- described further down.
     melee = true,
+    -- Flash a button when its ability comes off cooldown (Flash.lua):
+    -- "combat" (in fights only), "always" or "off".
+    flash = "combat",
 }
 
 -- The game's own icon colours, put back when a button is back in range.
@@ -260,6 +264,16 @@ SlashCmdList.RANGESHADE = function(msg)
     elseif command == "melee" then
         ns.db.melee = not ns.db.melee
         ns.Print("Melee abilities are " .. (ns.db.melee and "shaded too." or "left alone."))
+    elseif command == "flash" then
+        for index, mode in ipairs(ns.FLASH_MODES) do
+            if mode.key == ns.FlashMode().key then
+                ns.db.flash = ns.FLASH_MODES[index % #ns.FLASH_MODES + 1].key
+                break
+            end
+        end
+        ns.Print("Flash when an ability is ready: " .. ns.FlashMode().label:lower() .. ".")
+        ns.RefreshOptions()
+        return
     elseif command == "debug" then
         PrintDebug(buttons)
         return
@@ -268,6 +282,7 @@ SlashCmdList.RANGESHADE = function(msg)
         ns.Print("/rangeshade on, off or toggle - shade out-of-range buttons, or leave them alone")
         ns.Print("/rangeshade strong or soft - how red the shading is")
         ns.Print("/rangeshade melee - whether melee abilities are shaded too")
+        ns.Print("/rangeshade flash - flash buttons when they come off cooldown: in fights, always, or off")
         ns.Print("/rangeshade debug - list what the game reports for each button, to diagnose shading")
         return
     end
